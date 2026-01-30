@@ -7,71 +7,54 @@ tags: output, json, automation, scripting, api
 
 ## Support --json for Machine-Readable Output
 
-Provide `--json` flag for structured, machine-readable output. This enables integration with other tools and scripts.
+Provide `--json` for structured output. Essential for scripts and agents.
 
-**Incorrect (only human-readable output):**
+**Human output:**
 
-```bash
+```
 $ mycmd list
 Projects:
   - myapp (active)
   - oldapp (archived)
-
-# Hard to parse in scripts
 ```
 
-**Correct (supports --json):**
+**Machine output:**
 
-```bash
+```
 $ mycmd list --json
-{"projects":[{"name":"myapp","status":"active"},{"name":"oldapp","status":"archived"}]}
-```
-
-**Implementation:**
-
-```typescript
-import { Command } from 'commander'
-
-function listProjects(options: { json?: boolean }) {
-  const projects = getProjects()
-
-  if (options.json) {
-    console.log(JSON.stringify({ projects }, null, 2))
-  } else {
-    console.log('Projects:')
-    projects.forEach((p) => {
-      console.log(`  - ${p.name} (${p.status})`)
-    })
-  }
+{
+  "projects": [
+    { "name": "myapp", "status": "active" },
+    { "name": "oldapp", "status": "archived" }
+  ]
 }
-
-const program = new Command()
-program.command('list').option('--json', 'output as JSON').action(listProjects)
 ```
 
-**Benefits:**
-
-- Pipes to `jq` for querying: `mycmd list --json | jq '.projects[0].name'`
-- Integrates with web services via `curl`
-- Enables programmatic usage
-- Stable output format for scripts
-
-**JSON output should:**
-
-- Be valid, parsable JSON
-- Use consistent schema
-- Be formatted (pretty-printed) by default
-- Go to `stdout` (not `stderr`)
+**Pipe to jq:**
 
 ```bash
-# Pipe to jq for processing
-mycmd list --json | jq '.projects[] | select(.status == "active")'
+$ mycmd list --json | jq '.projects[0].name'
+myapp
 
-# Save to file
-mycmd export --json > data.json
-
-# Send to API
-mycmd get user --json | curl -X POST https://api.example.com/users -d @-
+$ mycmd list --json | jq '.projects[] | select(.status == "active")'
+{
+  "name": "myapp",
+  "status": "active"
+}
 ```
 
-Reference: https://stedolan.github.io/jq/
+**All commands should support --json:**
+
+```bash
+mycmd list --json
+mycmd get user-123 --json
+mycmd status --json
+```
+
+**JSON should:**
+
+- Be valid, parseable
+- Pretty-printed (2 space indent)
+- Use consistent field names (camelCase)
+- Go to stdout (not stderr)
+- Include all relevant data

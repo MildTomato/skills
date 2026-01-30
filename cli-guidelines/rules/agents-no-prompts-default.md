@@ -7,113 +7,56 @@ tags: agents, prompts, automation, flags, non-interactive
 
 ## Avoid Interactive Prompts for Agent-Driven CLIs
 
-AI agents cannot respond to interactive prompts. Make all operations possible via flags alone.
+Make all operations possible via flags. Agents can't answer prompts.
 
-**Incorrect (requires interaction):**
+**Incorrect (requires interaction - agent stuck):**
 
-```typescript
-async function deploy() {
-  const { env } = await prompts({
-    type: 'select',
-    name: 'env',
-    message: 'Choose environment',
-    choices: [{ title: 'staging' }, { title: 'production' }],
-  })
-
-  // Agent gets stuck here!
-  const { confirm } = await prompts({
-    type: 'confirm',
-    name: 'confirm',
-    message: 'Are you sure?',
-  })
-}
+```
+$ mycmd deploy
+Choose environment:
+  1. staging
+  2. production
+> _
+(agent can't respond)
 ```
 
-**Correct (flags for everything):**
+**Correct (works non-interactively):**
 
-```typescript
-async function deploy(options: { env?: string; force?: boolean; noInput?: boolean }) {
-  // Require --env flag (no prompting)
-  if (!options.env) {
-    console.error('Error: --env is required')
-    console.error('Usage: mycmd deploy --env <staging|production>')
-    process.exit(2)
-  }
-
-  // Use --force instead of confirmation prompt
-  if (options.env === 'production' && !options.force) {
-    console.error('Error: Use --force to deploy to production')
-    process.exit(1)
-  }
-
-  await doDeploy(options.env)
-}
+```
+$ mycmd deploy --env staging
+Deploying to staging...
+✓ Deployed
 ```
 
-**Always provide flag alternatives:**
+**If flag missing in non-interactive mode:**
 
-| Instead of prompting | Provide flag              |
-| -------------------- | ------------------------- |
-| "Choose environment" | `--env <env>`             |
-| "Are you sure?"      | `--force` or `--yes`      |
-| "Enter API key"      | `--api-key-file <file>`   |
-| "Select region"      | `--region <region>`       |
-| "Continue?"          | `--yes` or `--no-confirm` |
+```
+$ mycmd deploy
+Error: --env is required
 
-**Use --yes or --force for confirmations:**
-
-```typescript
-program
-  .command('delete')
-  .argument('<resource>')
-  .option('-y, --yes', 'skip confirmation')
-  .option('--force', 'force deletion')
-  .action(async (resource, options) => {
-    if (!options.yes && !options.force) {
-      console.error('Error: Use --yes or --force to confirm deletion')
-      process.exit(1)
-    }
-    await deleteResource(resource)
-  })
+Usage: mycmd deploy --env <staging|production>
 ```
 
-**Agent-friendly CLI design:**
+**Provide flags for all inputs:**
+
+| Instead of           | Provide flag            |
+| -------------------- | ----------------------- |
+| "Choose environment" | `--env <env>`           |
+| "Are you sure?"      | `--yes` or `--force`    |
+| "Enter API key"      | `--api-key-file <file>` |
+| "Select region"      | `--region <region>`     |
+
+**Agent-friendly design:**
 
 ```bash
-# All operations work non-interactively
+# Everything via flags
 mycmd init --name myproject --template basic
-mycmd deploy --env staging --region us-east
-mycmd delete project-123 --yes
-mycmd configure --key=value
+mycmd deploy --env staging --region us-east --yes
+mycmd delete resource-123 --force
 ```
 
-**If you must prompt humans, always provide flag alternative:**
+**Still support interactive for humans:**
 
-```typescript
-async function getInput(key: string, options: any): Promise<string> {
-  // Check flag first
-  if (options[key]) {
-    return options[key]
-  }
-
-  // Check env var
-  const envKey = `MYCMD_${key.toUpperCase()}`
-  if (process.env[envKey]) {
-    return process.env[envKey]
-  }
-
-  // Only prompt if interactive AND not --no-input
-  if (process.stdin.isTTY && !options.noInput) {
-    const { value } = await prompts({
-      type: 'text',
-      name: 'value',
-      message: `Enter ${key}`,
-    })
-    return value
-  }
-
-  // Agent path: require flag
-  console.error(`Error: --${key} is required in non-interactive mode`)
-  process.exit(2)
-}
-```
+- Prompt if stdin is TTY
+- Use flags if provided
+- Use env vars as fallback

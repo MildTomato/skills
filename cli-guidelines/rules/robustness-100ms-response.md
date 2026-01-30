@@ -53,19 +53,25 @@ console.error('Analyzing results...')
 const results = expensiveComputation(data)
 ```
 
-**Why this matters:**
+**Why this matters (user experience):**
 
-```bash
-# Without feedback - user doesn't know if it's working
+```
+# Without feedback - appears frozen, user gets anxious
 $ mycmd deploy
+_
 (30 seconds of silence... is it working? frozen? should I Ctrl-C?)
+(User hits Ctrl-C thinking it's broken)
 
-# With feedback - user knows what's happening
+# With immediate feedback - user knows what's happening
 $ mycmd deploy
 Connecting to server...
-Uploading files...
-Building application...
-Deployed successfully!
+⠋ Uploading files (15 files, 2.3 MB)...
+⠙ Building application...
+⠹ Deploying to production...
+✓ Deployed successfully! (1m 23s)
+
+  URL: https://myapp.com
+  Version: v1.2.3
 ```
 
 **Perceived performance is as important as actual performance:**

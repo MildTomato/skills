@@ -7,77 +7,61 @@ tags: errors, output, ux, attention
 
 ## Put Important Info at End of Output
 
-Place the most important information at the end of error output. Users' eyes go to the last line first.
+Place the most important information at the end. Users' eyes go there first.
 
-**Incorrect (solution buried at top):**
+**Incorrect (solution at top - user misses it):**
 
 ```
 $ mycmd deploy
+
 Fix: Run 'mycmd login' first
-... (20 lines of context)
+
+Deployment failed with error:
+  Error code: AUTH_REQUIRED
+  Status: 401 Unauthorized
+  (20 more lines of debug info...)
+
 Error: Not authenticated
-Debug info: ...
-Stack trace: ...
 ```
 
-**Correct (solution at the end):**
+**Correct (solution at end - user sees it):**
 
 ```
 $ mycmd deploy
+
 Error: Not authenticated
 Unable to deploy without credentials.
 
-Fix: Run 'mycmd login' first
-```
-
-**Use red text sparingly—it draws attention:**
-
-```python
-import sys
-
-def error(message, solution=None):
-    print(f"Error: {message}", file=sys.stderr)
-    if solution:
-        # Solution at the end, optionally in red/bold
-        print(f"\n{solution}", file=sys.stderr)
+Run: mycmd login
 ```
 
 **Visual hierarchy:**
 
 ```
 $ mycmd build
-Building application...
+
 Error: Missing dependency 'libfoo'
 
-Install it with: apt install libfoo
-# ^ User's eyes go here
+Install: apt install libfoo
+         ^^^ User's eyes go here
 ```
 
-**Stack traces should be hidden by default:**
+**For multiple errors:**
 
 ```
-$ mycmd deploy
-Error: Failed to connect to database
-Connection refused at localhost:5432
+$ mycmd validate
 
-Try: docker start postgres
-(Use --verbose for stack trace)
-```
-
-**Multi-error output:**
-
-```
-# Put summary and fix at end
 Found 3 errors in config.json:
   - Line 5: invalid syntax
-  - Line 12: missing required field
+  - Line 12: missing field
   - Line 18: unknown property
 
-Fix these errors and run again.
+Fix these errors and run again
+                   ^^^ Clear next step
 ```
 
-**Color usage:**
+**Use red text sparingly:**
 
-- Red for errors - use sparingly (only actual errors)
-- Don't rely on color alone (still readable without it)
-- Keep important info visible in plain text
+- Only for actual errors
+- Don't rely on color alone
+- Keep important info readable without color

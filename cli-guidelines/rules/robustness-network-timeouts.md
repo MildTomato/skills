@@ -7,109 +7,55 @@ tags: robustness, network, timeouts, http, reliability
 
 ## Set Timeouts on Network Operations
 
-Always set timeouts on network operations. Don't let your CLI hang forever.
+Always set timeouts. Don't hang forever if the server doesn't respond.
 
-**Incorrect (no timeout - hangs forever):**
+**Without timeout (hangs forever):**
 
-```typescript
-// Hangs forever if server doesn't respond
-const response = await fetch(url)
+```
+$ mycmd deploy
+Connecting to server...
+(hangs forever if server is down)
 ```
 
-**Correct (with timeout):**
+**With timeout (fails fast):**
 
-```typescript
-// Times out after 30 seconds
-const controller = new AbortController()
-const timeout = setTimeout(() => controller.abort(), 30000)
+```
+$ mycmd deploy
+Connecting to server...
+Error: Request timed out after 30s
 
-try {
-  const response = await fetch(url, {
-    signal: controller.signal,
-  })
-  clearTimeout(timeout)
-} catch (error) {
-  if (error.name === 'AbortError') {
-    console.error('Error: Request timed out after 30s')
-    console.error('Check your network connection')
-    process.exit(4) // Network error exit code
-  }
-  throw error
-}
+Check:
+  - Network connection
+  - Server status
+
+Or increase timeout: mycmd deploy --timeout 60
 ```
 
-**Using axios (simpler):**
+**Implementation:**
 
 ```typescript
-import axios from 'axios'
-
-const response = await axios.get(url, {
-  timeout: 30000, // 30 second timeout
+const response = await fetch(url, {
+  signal: AbortSignal.timeout(30000),
 })
 ```
 
-**Make timeouts configurable:**
+**Make configurable:**
 
-```typescript
-program.option('--timeout <seconds>', 'network timeout', '30').action(async (options) => {
-  const timeoutMs = parseInt(options.timeout) * 1000
-
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(timeoutMs),
-  })
-})
+```
+$ mycmd deploy --timeout 60
 ```
 
 **Different timeouts for different operations:**
 
-```typescript
-const TIMEOUTS = {
-  connect: 5000, // 5s to establish connection
-  read: 30000, // 30s to read response
-  upload: 300000, // 5 minutes for large uploads
-}
-
-await fetch(url, {
-  signal: AbortSignal.timeout(TIMEOUTS.read),
-})
-```
-
-**Show timeout in error:**
-
-```typescript
-catch (error) {
-  if (error.name === 'AbortError') {
-    console.error(`Error: Request timed out after ${timeout/1000}s`)
-    console.error('Try:')
-    console.error(`  - Increase timeout: mycmd --timeout 60`)
-    console.error(`  - Check network connection`)
-    process.exit(4)
-  }
-}
-```
-
-**Retry with backoff for transient failures:**
-
-```typescript
-async function fetchWithRetry(url: string, maxRetries = 3) {
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fetch(url, {
-        signal: AbortSignal.timeout(30000),
-      })
-    } catch (error) {
-      if (attempt === maxRetries - 1) throw error
-
-      const backoff = Math.pow(2, attempt) * 1000
-      console.error(`Retry in ${backoff / 1000}s...`)
-      await sleep(backoff)
-    }
-  }
-}
-```
-
-**Default timeouts:**
-
-- Connection: 5-10 seconds
-- Read: 30-60 seconds
+- Connection: 5-10s
+- Read: 30-60s
 - Large uploads: 5-10 minutes
+
+**Retry with backoff:**
+
+```
+$ mycmd deploy
+Connection failed, retrying in 2s...
+Connection failed, retrying in 4s...
+✓ Connected
+```

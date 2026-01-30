@@ -7,81 +7,50 @@ tags: config, precedence, environment, flags
 
 ## Follow Configuration Precedence
 
-Apply configuration in order of precedence from highest to lowest. Flags override everything.
+Apply configuration in order from highest to lowest priority.
 
-**Precedence order (highest to lowest):**
+**Precedence (highest to lowest):**
 
-1. **Flags** - `--config-value=X`
-2. **Environment variables** - `MYAPP_CONFIG_VALUE=X`
-3. **Project config** - `./.myapprc`, `./.env`
+1. **Flags** - `--port=5000`
+2. **Environment variables** - `MYAPP_PORT=4000`
+3. **Project config** - `./.myapprc`
 4. **User config** - `~/.config/myapp/config.json`
 5. **System config** - `/etc/myapp/config`
-
-**Incorrect (random precedence):**
-
-```typescript
-// Confusing - env var overrides flag!
-let configValue = process.env.MYAPP_VALUE
-if (options.value) {
-  configValue = options.value // Wrong order
-}
-```
-
-**Correct (proper precedence):**
-
-```typescript
-function getConfigValue(key: string, options: any): string {
-  // 1. Flag (highest priority)
-  if (options[key] !== undefined) {
-    return options[key]
-  }
-
-  // 2. Environment variable
-  const envKey = `MYAPP_${key.toUpperCase()}`
-  if (process.env[envKey]) {
-    return process.env[envKey]
-  }
-
-  // 3. Project config file
-  const projectConfig = loadConfig('./.myapprc')
-  if (projectConfig[key]) {
-    return projectConfig[key]
-  }
-
-  // 4. User config file
-  const userConfig = loadConfig('~/.config/myapp/config.json')
-  if (userConfig[key]) {
-    return userConfig[key]
-  }
-
-  // 5. System config (lowest priority)
-  const systemConfig = loadConfig('/etc/myapp/config')
-  return systemConfig[key]
-}
-```
 
 **Example behavior:**
 
 ```bash
 # System config: port = 8080
 # User config: port = 3000
-# Env var: MYAPP_PORT=4000
-# Flag: --port=5000
+# No env var, no flag
 
 $ mycmd start
-# Uses 3000 (user config)
+Starting on port 3000...
+(uses user config)
 
 $ MYAPP_PORT=4000 mycmd start
-# Uses 4000 (env var overrides user config)
+Starting on port 4000...
+(env var overrides user config)
 
-$ mycmd start --port=5000
-# Uses 5000 (flag overrides everything)
+$ mycmd start --port 5000
+Starting on port 5000...
+(flag overrides everything)
 ```
 
-**This order makes sense because:**
+**Why this order makes sense:**
 
-- Flags are most explicit and immediate
+- Flags are most explicit/immediate
 - Env vars are session-specific
 - Project config is shared with team
-- User config is personal preference
+- User config is personal
 - System config is global default
+
+**Show config sources:**
+
+```
+$ mycmd config show port
+port = 5000 (from flag --port)
+
+$ mycmd config show port
+port = 3000 (from ~/.config/myapp/config.json)
+```

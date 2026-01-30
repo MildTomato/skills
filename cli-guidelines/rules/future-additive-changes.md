@@ -7,85 +7,50 @@ tags: future-proofing, api-design, compatibility, versioning
 
 ## Keep Changes Additive
 
-Add new flags and features instead of changing existing behavior. This keeps existing scripts working.
+Add new flags and features. Don't change existing behavior.
 
-**Incorrect (breaks existing usage):**
-
-```bash
-# Version 1.0: --output means file path
-mycmd process --output results.txt
-
-# Version 2.0: --output now means format (BREAKS v1 scripts!)
-mycmd process --output json
-# Tries to write to file named "json"
-```
-
-**Correct (additive change):**
+**Incorrect (breaks existing scripts):**
 
 ```bash
 # Version 1.0
-mycmd process --output results.txt
+$ mycmd process --output results.txt
 
-# Version 2.0: Add new flag, keep old one
-mycmd process --output results.txt --format json
-# Both flags coexist
+# Version 2.0: --output now means format (BREAKS v1!)
+$ mycmd process --output json
+(tries to write to file named "json")
 ```
 
-**Adding, not changing:**
+**Correct (additive):**
 
 ```bash
-# Good: Adding new flag
-v1.0: mycmd deploy app
-v2.0: mycmd deploy app --region us-east  # New flag
+# Version 1.0
+$ mycmd process --output results.txt
 
-# Bad: Changing behavior
-v1.0: mycmd deploy app  # Deploys to production
-v2.0: mycmd deploy app  # Now deploys to staging (BREAKING!)
+# Version 2.0: Add new flag, keep old
+$ mycmd process --output results.txt --format json
 ```
 
-**If you must make breaking changes:**
+**Deprecation warnings:**
 
-1. **Add new flag first** (both old and new work)
-2. **Deprecation warning** when old flag is used
-3. **Wait several versions** before removing
-
-```typescript
-if (options.oldFlag) {
-  console.error('Warning: --old-flag is deprecated')
-  console.error('Use --new-flag instead')
-  console.error('--old-flag will be removed in v3.0')
-  // Still works for now
-  handleOldFlag()
-}
 ```
+$ mycmd deploy --old-flag
 
-**Detect and silence warnings:**
+Warning: --old-flag is deprecated
+Use --new-flag instead
+--old-flag will be removed in v3.0
 
-```typescript
-// Once user switches to new flag, no warning
-if (options.newFlag && !options.oldFlag) {
-  // User updated - no warning needed
-  handleNewFlag()
-}
+Deploying...
 ```
 
 **What's safe to change:**
 
 - Adding new flags/subcommands
-- Adding new output fields to --json
-- Improving human-readable output (if users use --json in scripts)
-- Improving error messages
+- Adding fields to --json
+- Improving human output (if users use --json in scripts)
 
 **What breaks users:**
 
 - Removing flags
 - Changing flag behavior
-- Changing --json schema (removing fields)
-- Changing --plain output format
+- Removing --json fields
 - Changing exit codes
-
-**Use semantic versioning:**
-
-- Patch (1.0.1): Bug fixes only
-- Minor (1.1.0): Additive changes
-- Major (2.0.0): Breaking changes (use sparingly!)

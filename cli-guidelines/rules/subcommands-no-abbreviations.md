@@ -7,96 +7,55 @@ tags: subcommands, abbreviations, future-proofing, aliases
 
 ## Don't Allow Arbitrary Abbreviations
 
-Don't auto-expand subcommand abbreviations. It prevents adding new commands later.
+Don't auto-expand subcommand prefixes. It prevents adding new commands.
 
-**Incorrect (auto-expands prefixes):**
+**Problem:**
 
-```typescript
-// Dangerous - auto-expands any unique prefix
-const commands = ['install', 'init', 'info']
-const input = 'i' // Could mean install, init, or info
-
-// Finds first match
-const match = commands.find((c) => c.startsWith(input))
-runCommand(match) // Runs 'install'
 ```
+# User runs this, expecting 'install'
+$ mycmd i
+Running: install
 
-**Problem:** If user runs `mycmd i` expecting `install`, you can never add a command starting with `i` (like `inspect`) without breaking scripts.
+# Later you add 'inspect' command
+$ mycmd i
+Error: Ambiguous command 'i' - could be 'install' or 'inspect'
+
+# Or worse, silently runs wrong command!
+```
 
 **Correct (explicit aliases only):**
 
-```typescript
-import { Command } from 'commander'
-
-const program = new Command()
-
-// Full command name required
-program
-  .command('install')
-  .alias('i') // Explicit, documented alias
-  .action(install)
-
-// Now 'mycmd install' and 'mycmd i' both work
-// But 'mycmd ins' does NOT work
 ```
+$ mycmd install
+✓ Installed
 
-**Bad example from real tools:**
+$ mycmd i
+✓ Installed  (documented alias)
 
-```bash
-# Some tools allow:
-git comm      # Expands to 'commit'
-git chec      # Expands to 'checkout'
-
-# Now can't add 'git check' or 'git comment' without breaking scripts!
+$ mycmd ins
+Error: Unknown command 'ins'
+Did you mean 'install'? Use 'i' or 'install'
 ```
 
 **Explicit aliases are fine:**
 
-```typescript
-program.command('install').alias('i').alias('add') // Multiple aliases OK if documented
-
-// Documented: 'install', 'i', and 'add' all work
-// Undocumented: 'ins', 'inst', etc. do NOT work
+```
+$ mycmd --help
+Commands:
+  install, i, add    Install package
+  remove, rm         Remove package
 ```
 
-**kubectl pattern (explicit short forms):**
+**kubectl example:**
 
-```bash
-kubectl get pods     # Full command
-kubectl get po       # Documented short form
-kubectl get p        # Does NOT work (no arbitrary abbrev)
 ```
-
-**Implementation:**
-
-```typescript
-const COMMAND_ALIASES = {
-  install: ['i', 'add'],
-  remove: ['rm', 'delete'],
-  list: ['ls'],
-}
-
-function resolveCommand(input: string): string | null {
-  // Check exact match first
-  if (COMMANDS.includes(input)) {
-    return input
-  }
-
-  // Check aliases
-  for (const [cmd, aliases] of Object.entries(COMMAND_ALIASES)) {
-    if (aliases.includes(input)) {
-      return cmd
-    }
-  }
-
-  // No arbitrary expansion
-  return null
-}
+$ kubectl get pods    # Full command
+$ kubectl get po      # Documented short form
+$ kubectl get p       # Error: unknown resource
 ```
 
 **Benefits:**
 
-- Can add new commands freely
-- Aliases are stable and documented
+- Can add new commands safely
+- Aliases are documented and stable
 - No surprising behavior
-- Scripts won't break on updates

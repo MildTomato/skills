@@ -7,97 +7,63 @@ tags: agents, stdout, stderr, progress, output, piping
 
 ## Send Progress to stderr, Data to stdout
 
-AI agents capture stdout for data. Send all progress, logs, and status to stderr.
+Send all progress and status messages to stderr. Keep stdout clean for data.
 
-**Incorrect (mixes progress with data):**
+**Incorrect (progress mixed with data):**
 
-```typescript
-async function export() {
-  console.log("Exporting users...")      // Goes to stdout!
-  const users = await getUsers()
-  console.log("Processing...")            // Goes to stdout!
-  console.log(JSON.stringify(users))      // Mixed with progress!
-}
+```
+$ mycmd export --json
+Exporting users...
+{"id": "1", "name": "Alice"}
+Processing...
+{"id": "2", "name": "Bob"}
+Done
 ```
 
 **Correct (progress to stderr, data to stdout):**
 
-```typescript
-async function export() {
-  console.error("Exporting users...")     // stderr
-  const users = await getUsers()
-  console.error("Processing...")          // stderr
-  console.log(JSON.stringify(users))      // stdout - clean data
-}
+```
+$ mycmd export --json
+(stderr) Exporting users...
+(stdout) {"id": "1", "name": "Alice"}
+(stderr) Processing...
+(stdout) {"id": "2", "name": "Bob"}
+(stderr) ✓ Done
 ```
 
-**Why this matters for agents:**
+**Agent captures stdout cleanly:**
 
 ```typescript
-// Agent captures stdout
 const { stdout } = await exec('mycmd export --json')
-const data = JSON.parse(stdout) // Clean JSON, no progress messages
-
-// Progress visible to user (stderr)
-// Exporting users...
-// Processing...
+// stdout = '{"id": "1"...}\n{"id": "2"...}\n'
+// No progress messages mixed in
 ```
 
-**Use logging libraries that respect streams:**
-
-```typescript
-import winston from 'winston'
-
-const logger = winston.createLogger({
-  transports: [
-    new winston.transports.Console({
-      stream: process.stderr, // All logs to stderr
-    }),
-  ],
-})
-
-logger.info('Processing...') // stderr
-console.log(JSON.stringify(result)) // stdout
-```
-
-**Progress bars should go to stderr:**
-
-```typescript
-import ora from 'ora'
-
-const spinner = ora({ stream: process.stderr })
-spinner.start('Loading...')
-
-const data = await fetchData()
-
-spinner.stop()
-console.log(JSON.stringify(data)) // Clean stdout
-```
-
-**Rule of thumb:**
-
-| Stream     | Content                                  |
-| ---------- | ---------------------------------------- |
-| **stdout** | Primary output, --json data, piped data  |
-| **stderr** | Progress, logs, warnings, errors, status |
-
-**Verify with piping:**
+**Why this matters:**
 
 ```bash
-# Should work cleanly
-mycmd export --json | jq '.users[]'
+# Works correctly - only JSON in output
+$ mycmd export --json | jq '.[] | .name'
+Alice
+Bob
 
-# Bad: if progress goes to stdout
-mycmd export --json | jq '.users[]'
-# parse error: Invalid JSON (progress messages mixed in)
+# Breaks if progress goes to stdout
+$ mycmd export --json | jq
+parse error: Invalid JSON (progress messages mixed in)
 ```
 
-**Even --verbose output goes to stderr:**
+**Use console.error() for all non-data:**
+
+```typescript
+console.error('Processing...') // stderr
+console.log(JSON.stringify(data)) // stdout
+```
+
+**Even --verbose goes to stderr:**
 
 ```typescript
 if (options.verbose) {
-  console.error('[DEBUG] Fetching from API...') // stderr
-  console.error('[DEBUG] Got 100 items') // stderr
+  console.error('[DEBUG] Fetching...')
 }
-console.log(JSON.stringify(items)) // stdout
+console.log(JSON.stringify(result))
 ```

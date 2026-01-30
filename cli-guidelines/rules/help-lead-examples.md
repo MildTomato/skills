@@ -38,16 +38,16 @@ mycmd - Process and transform data files
 EXAMPLES
   # Basic usage
   mycmd input.csv
-  
+
   # Convert CSV to JSON
   mycmd data.csv --format json > output.json
-  
+
   # Process multiple files
   mycmd *.csv --format yaml --output results/
-  
+
   # With filtering and transformation
   mycmd data.csv --filter "age > 18" --format json
-  
+
   # Custom delimiter
   mycmd data.tsv --delimiter '\t' --format json
 

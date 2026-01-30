@@ -7,91 +7,64 @@ tags: interactivity, tty, prompts, scripting, automation
 
 ## Only Prompt if stdin is a TTY
 
-Only use prompts or interactive elements if stdin is an interactive terminal. In scripts and pipes, fail with clear error message.
+Only prompt when running interactively. In scripts, fail with clear error.
 
-**Incorrect (always prompts - breaks scripts):**
+**Incorrect (hangs in scripts):**
 
-```typescript
-import prompts from 'prompts'
+```
+$ cat deploy.sh
+#!/bin/bash
+mycmd deploy
 
-// Hangs in scripts!
-const { confirm } = await prompts({
-  type: 'confirm',
-  name: 'confirm',
-  message: 'Continue?',
-})
-if (!confirm) process.exit(1)
+$ ./deploy.sh
+Continue? [y/N]:
+(hangs forever - no one to answer)
 ```
 
-**Correct (checks for TTY):**
+**Correct (detects non-interactive):**
 
-```typescript
-import prompts from 'prompts'
-
-if (process.stdin.isTTY) {
-  // Interactive terminal - can prompt
-  const { confirm } = await prompts({
-    type: 'confirm',
-    name: 'confirm',
-    message: 'Continue?',
-  })
-  if (!confirm) process.exit(1)
-} else {
-  // Script/pipe - require flag
-  if (!options.force) {
-    console.error('Error: Use --force in non-interactive mode')
-    process.exit(1)
-  }
-}
 ```
+$ ./deploy.sh
 
-**Why this matters:**
-
-```bash
-# Without TTY check, script hangs forever
-$ mycmd deploy
-# Waiting for input that never comes...
-
-# With TTY check, fails fast with clear message
-$ mycmd deploy
 Error: Use --force in non-interactive mode
+
+Usage: mycmd deploy --force
 ```
 
-**Always provide non-interactive alternative:**
+**Interactive mode works:**
 
-```bash
-# Interactive mode
-$ mycmd delete-project
-Type project name to confirm: myproject
-Deleted.
-
-# Non-interactive mode (required for scripts)
-$ mycmd delete-project --confirm=myproject
-Deleted.
+```
+$ mycmd deploy
+Continue? [y/N]: y
+✓ Deployed
 ```
 
-**Other languages:**
+**Non-interactive with flag:**
 
-```go
-import "github.com/mattn/go-isatty"
+```
+$ mycmd deploy --force
+✓ Deployed
+```
 
-if isatty.IsTerminal(os.Stdin.Fd()) {
-    // Can prompt
+**Check stdin TTY:**
+
+```typescript
+if (process.stdin.isTTY) {
+  // Can prompt
 } else {
-    // Must use flags
+  // Require flags
 }
 ```
 
-```python
-import sys
-if sys.stdin.isatty():
-    # Interactive
-else:
-    # Script mode
+**Always provide --no-input:**
+
+```
+$ mycmd deploy --no-input
+Error: --env required with --no-input
 ```
 
-**Also provide `--no-input` flag:**
+**In CI:**
 
-```bash
-mycmd deploy --no-input  # Never prompt, fail if input needed
+```yaml
+- run: mycmd deploy --no-input --env prod --force
 ```

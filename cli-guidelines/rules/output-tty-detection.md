@@ -7,69 +7,53 @@ tags: output, tty, colors, animations, piping
 
 ## Check if TTY Before Using Colors/Animations
 
-Only use colors, animations, and formatting when outputting to an interactive terminal (TTY). Otherwise output will break in pipes and scripts.
+Only use colors and animations when outputting to a terminal. They break in pipes.
 
-**Incorrect (always uses colors):**
+**With TTY detection (works everywhere):**
 
-```typescript
-// Breaks when piped
-console.log('\x1b[32mSuccess!\x1b[0m') // Always outputs escape codes
+```
+$ mycmd deploy
+✓ Deployed successfully
+(shows colors in terminal)
+
+$ mycmd deploy | cat
+Deployed successfully
+(plain text when piped)
 ```
 
-**Correct (checks for TTY):**
+**Without TTY detection (breaks):**
+
+```
+$ mycmd deploy | cat
+^[[32mDeployed successfully^[[0m
+(escape codes visible)
+```
+
+**Check before colors:**
 
 ```typescript
-function printSuccess(message: string) {
-  if (process.stdout.isTTY) {
-    // Interactive terminal - use colors
-    console.log(`\x1b[32m${message}\x1b[0m`)
-  } else {
-    // Piped or redirected - plain text
-    console.log(message)
-  }
+if (process.stdout.isTTY) {
+  console.log('\x1b[32mSuccess!\x1b[0m')
+} else {
+  console.log('Success!')
 }
-
-printSuccess('Success!')
 ```
 
-**Using chalk library (recommended):**
+**Use chalk (auto-detects):**
 
 ```typescript
 import chalk from 'chalk'
-
-// chalk automatically detects TTY
 console.log(chalk.green('Success!'))
-// Outputs colors in terminal, plain text when piped
-```
-
-**Other languages:**
-
-```go
-import "github.com/mattn/go-isatty"
-
-if isatty.IsTerminal(os.Stdout.Fd()) {
-    fmt.Println("\033[32mSuccess!\033[0m")
-} else {
-    fmt.Println("Success!")
-}
-```
-
-```python
-import sys
-if sys.stdout.isatty():
-    print("\033[32mSuccess!\033[0m")
-else:
-    print("Success!")
+// Colors in terminal, plain when piped
 ```
 
 **Also disable colors when:**
 
-- `NO_COLOR` environment variable is set (non-empty)
+- `NO_COLOR` env var is set
 - `TERM=dumb`
-- `--no-color` flag is passed
-- Outputting to a file or pipe
+- `--no-color` flag passed
 
-**Animations must also check TTY:**
+**Animations must check TTY:**
 
 ```typescript
 if (process.stderr.isTTY) {
@@ -78,5 +62,3 @@ if (process.stderr.isTTY) {
   console.error('Processing...')
 }
 ```
-
-Reference: https://no-color.org/

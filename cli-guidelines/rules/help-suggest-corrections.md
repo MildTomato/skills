@@ -7,89 +7,69 @@ tags: help, typos, suggestions, usability, ux
 
 ## Suggest Corrections for Typos
 
-When the user makes a typo, suggest what they might have meant.
+When users make typos, suggest what they likely meant.
 
-**Incorrect (unhelpful error):**
+**Incorrect (unhelpful):**
 
-```bash
-$ heroku pss
-Error: Unknown command: pss
+```
+$ mycmd pss
+Error: Unknown command 'pss'
 ```
 
 **Correct (suggests fix):**
 
-```bash
-$ heroku pss
-Warning: pss is not a heroku command.
-Did you mean ps? [y/n]:
+```
+$ mycmd pss
+
+Error: Unknown command 'pss'
+
+Did you mean 'ps'? [y/N]: y
+
+Running: mycmd ps
+...
 ```
 
-**Implementation with fuzzy matching:**
+**Or without prompt:**
 
-```typescript
-import { distance } from 'fastest-levenshtein'
-import prompts from 'prompts'
+```
+$ mycmd pss
 
-async function handleUnknownCommand(cmd: string, validCommands: string[]) {
-  // Find closest match
-  const matches = validCommands
-    .map((c) => ({ cmd: c, dist: distance(cmd, c) }))
-    .filter((m) => m.dist <= 2)
-    .sort((a, b) => a.dist - b.dist)
+Error: Unknown command 'pss'
 
-  if (matches.length > 0) {
-    const suggestion = matches[0].cmd
-    console.error(`Error: Unknown command '${cmd}'`)
+Did you mean:
+  ps - Show processes
 
-    if (process.stdin.isTTY) {
-      const { confirm } = await prompts({
-        type: 'confirm',
-        name: 'confirm',
-        message: `Did you mean '${suggestion}'?`,
-      })
-      if (confirm) {
-        runCommand(suggestion)
-        return
-      }
-    }
-
-    console.error(`Run: mycmd ${suggestion}`)
-  } else {
-    console.error(`Error: Unknown command '${cmd}'`)
-    console.error("Run 'mycmd --help' for available commands")
-  }
-}
+Run: mycmd ps
 ```
 
-**Example from Homebrew:**
+**Suggest for flags too:**
 
-```bash
+```
+$ mycmd deploy --quite
+
+Error: Unknown flag '--quite'
+
+Did you mean '--quiet'?
+```
+
+**From Homebrew:**
+
+```
 $ brew update jq
+
 Error: This command updates brew itself.
-Did you mean 'upgrade'?
+
+Did you mean:
+  brew upgrade jq
 ```
-
-**Don't auto-run corrections:**
-
-- Typo might indicate logical mistake
-- Auto-correction means you support that syntax forever
-- User won't learn the correct command
 
 **When to suggest:**
 
-- Close matches (1-2 character difference)
+- 1-2 character difference
 - Common abbreviations
 - Case differences
 
-**When NOT to suggest:**
+**Don't auto-run corrections:**
 
-- No close matches (avoid confusing suggestions)
-- Dangerous operations (don't suggest `delete` when user typed `delate`)
-
-**Suggest flags too:**
-
-```bash
-$ mycmd deploy --quite
-Error: Unknown flag '--quite'
-Did you mean '--quiet'?
-```
+- User might mean something else
+- Auto-fix commits to supporting that syntax forever

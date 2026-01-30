@@ -7,104 +7,49 @@ tags: output, pager, less, usability
 
 ## Use a Pager for Long Output
 
-Automatically page long output (like `git diff` does). Don't dump 1000 lines to the terminal.
+Automatically page long output. Don't dump 1000 lines to the terminal.
 
-**Incorrect (dumps everything):**
+**Without pager (scrolls off screen):**
 
-```typescript
-// Dumps 1000 lines, scrolls off screen
-const logs = await getLogs()
-logs.forEach((log) => console.log(log))
+```
+$ mycmd logs
+(1000 lines scroll by)
+...
+line 998
+line 999
+line 1000
 ```
 
-**Correct (uses pager for long output):**
+**With pager (readable):**
 
-```typescript
-import { spawn } from 'child_process'
-
-function page(content: string) {
-  // Only page if stdout is TTY
-  if (!process.stdout.isTTY) {
-    console.log(content)
-    return
-  }
-
-  const lines = content.split('\n')
-
-  // Don't page if fits on screen
-  const termHeight = process.stdout.rows || 24
-  if (lines.length <= termHeight) {
-    console.log(content)
-    return
-  }
-
-  // Use pager
-  const pager = process.env.PAGER || 'less'
-  const less = spawn(pager, ['-FIRX'], {
-    stdio: ['pipe', 'inherit', 'inherit'],
-  })
-
-  less.stdin.write(content)
-  less.stdin.end()
-}
-
-// Usage
-const logs = await getLogs()
-page(logs.join('\n'))
+```
+$ mycmd logs
+(opens in less, can scroll/search)
 ```
 
-**Good options for less:**
+**Examples that use pagers:**
 
-- `-F`: Don't page if fits on one screen
-- `-I`: Case-insensitive search
-- `-R`: Allow colors/escape codes
-- `-X`: Don't clear screen on exit
-
-**Provide --no-pager flag:**
-
-```typescript
-program.option('--no-pager', 'disable paging').action((options) => {
-  if (options.noPager) {
-    console.log(content)
-  } else {
-    page(content)
-  }
-})
-```
-
-**Libraries that handle this:**
-
-```typescript
-// Use a library for better cross-platform support
-import terminalKit from 'terminal-kit'
-
-const term = terminalKit.terminal
-term.pager(content)
-```
+- `git diff`
+- `git log`
+- `man` pages
 
 **When to page:**
 
 - Help text with many commands
 - Log output
 - Diff output
-- Large data listings
 - Any output >100 lines
 
-**When NOT to page:**
+**Don't page when:**
 
 - Output is piped: `mycmd logs | grep error`
 - `--json` or `--plain` output
-- Non-TTY output
+- Not a TTY
 - User passed `--no-pager`
 
-**Check if output is piped:**
+**Good less options: `less -FIRX`**
 
-```typescript
-if (!process.stdout.isTTY || options.json || options.noPager) {
-  // Don't page
-  console.log(content)
-} else {
-  // Use pager
-  page(content)
-}
-```
+- `-F`: Don't page if fits on screen
+- `-I`: Case-insensitive search
+- `-R`: Allow colors
+- `-X`: Don't clear screen on exit

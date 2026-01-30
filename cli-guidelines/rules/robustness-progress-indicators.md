@@ -7,116 +7,57 @@ tags: robustness, progress, ux, feedback
 
 ## Show Progress for Long Operations
 
-Display progress indicators for operations taking more than ~1 second.
+Display progress for operations >1 second. Don't leave users wondering if it's frozen.
 
-**Incorrect (silent during long operation):**
+**Incorrect (silent for 5 minutes):**
 
-```typescript
-async function processFiles(files: string[]) {
-  // 5 minutes of silence
-  for (const file of files) {
-    await process(file)
-  }
-  console.log('Done')
-}
+```
+$ mycmd process files/*.csv
+(silence...)
+Done
 ```
 
 **Correct (shows progress):**
 
-```typescript
-import ora from 'ora'
-import cliProgress from 'cli-progress'
+```
+$ mycmd process files/*.csv
 
-async function processFiles(files: string[]) {
-  const bar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic)
-  bar.start(files.length, 0)
-
-  for (let i = 0; i < files.length; i++) {
-    await process(files[i])
-    bar.update(i + 1)
-  }
-
-  bar.stop()
-}
-
-// Or with ora for spinners
-const spinner = ora('Processing files...').start()
-for (const file of files) {
-  await process(file)
-}
-spinner.succeed('Processed all files')
+Processing files...
+████████████░░░░░░░░░ 45% | 45/100 | ETA: 28s
 ```
 
-Output:
+**With spinner:**
 
 ```
-Processing: ████████████░░░░░░░░░ 45% | 45/100 | ETA: 28s
+$ mycmd deploy
+⠋ Deploying application... (30s)
 ```
 
-**Progress indicator libraries:**
+**Multiple tasks:**
 
-- **Node**: ora (spinners), cli-progress (bars), listr2 (tasks)
-- Python: tqdm
-- Go: schollz/progressbar
-- Rust: indicatif
+```
+$ mycmd setup
+
+Setting up environment...
+  ✓ Install dependencies (12s)
+  ⠹ Build application (running...)
+  ⠿ Start services (waiting...)
+```
+
+**Parallel operations:**
+
+```
+$ mycmd download
+
+Downloading files...
+  ✓ image1.png  [████████████████████] 100% (2.3 MB)
+  ⠹ image2.png  [██████████░░░░░░░░░░]  50% (1.1 MB)
+  ⠋ image3.png  [████░░░░░░░░░░░░░░░░]  20% (0.4 MB)
+```
 
 **Only show in TTY:**
 
-```typescript
-if (process.stderr.isTTY) {
-  // Show progress bar
-  const bar = new cliProgress.SingleBar({})
-  bar.start(files.length, 0)
-  for (let i = 0; i < files.length; i++) {
-    await process(files[i])
-    bar.update(i + 1)
-  }
-  bar.stop()
-} else {
-  // Plain output for scripts/CI
-  console.error(`Processing ${files.length} files...`)
-  for (const file of files) {
-    await process(file)
-  }
-}
-```
+- Check `process.stderr.isTTY`
+- Plain output for scripts/CI
 
-**Progress indicators should:**
-
-- Show estimated time remaining
-- Animate to indicate activity (not frozen)
-- Stick to one line (don't spam)
-- On error, reveal full logs (don't hide behind progress)
-
-**For parallel operations:**
-
-```
-Downloading files:
-  image1.png   [████████████████████] 100%
-  image2.png   [██████████░░░░░░░░░░]  50%
-  image3.png   [████░░░░░░░░░░░░░░░░]  20%
-```
-
-**Simple spinners for indeterminate waits:**
-
-```bash
-$ mycmd deploy
-Deploying... ⠋
-```
-
-Use libraries to handle this—manual progress is hard to get right:
-
-```typescript
-import { Listr } from 'listr2'
-
-// Automatic parallel progress with tasks
-const tasks = new Listr(
-  [
-    { title: 'Task 1', task: async () => await doTask1() },
-    { title: 'Task 2', task: async () => await doTask2() },
-  ],
-  { concurrent: true }
-)
-
-await tasks.run()
-```
+**Libraries:** ora, cli-progress, listr2
