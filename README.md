@@ -1,6 +1,7 @@
 # Agent Skills
 
-A collection of skills for AI coding agents. Skills are packaged instructions and scripts that extend agent capabilities.
+A collection of skills for AI coding agents. Skills are packaged instructions
+and scripts that extend agent capabilities.
 
 Skills follow the [Agent Skills](https://agentskills.io/) format.
 
@@ -8,7 +9,9 @@ Skills follow the [Agent Skills](https://agentskills.io/) format.
 
 ### cli-guidelines
 
-Design and build well-crafted command-line interfaces following modern best practices. Based on the [Command Line Interface Guidelines](https://clig.dev/). Contains 31 focused, actionable rules prioritized by impact.
+Design and build well-crafted command-line interfaces following modern best
+practices. Based on the [Command Line Interface Guidelines](https://clig.dev/).
+Focused, actionable rules prioritized by impact.
 
 **Use when:**
 
@@ -16,69 +19,58 @@ Design and build well-crafted command-line interfaces following modern best prac
 - Implementing help text and error handling
 - Parsing arguments and flags
 - Designing interactive prompts
-- Setting up configuration systems
 - Improving CLI UX and output formatting
-- Reviewing CLI code for best practices
-- Refactoring existing command-line tools
+- Reviewing or refactoring CLI code
 
 **Categories covered:**
 
-- **The Basics** (CRITICAL) - Argument parsing, exit codes, stdout/stderr, help flags
+- **The Basics** (CRITICAL) - Argument parsing, exit codes, stdout/stderr
+- **AI Agent Integration** (CRITICAL) - JSON output, structured errors, --yes flag
 - **Help & Documentation** (CRITICAL) - Concise help, examples, suggestions
-- **Output Formatting** (HIGH) - TTY detection, JSON/plain output, state changes
-- **Error Handling** (HIGH) - Human-friendly errors, signal-to-noise, important info placement
-- **Arguments & Flags** (HIGH) - Prefer flags, standard names, no secrets in flags
-- **Interactivity** (HIGH) - TTY checks, --no-input flag, prompts
-- **Signals & Control** (HIGH) - Ctrl-C handling, graceful shutdown
-- **Robustness** (MEDIUM-HIGH) - 100ms response, progress indicators, validation, idempotency
-- **Subcommands** (MEDIUM-HIGH) - Consistency across commands
-- **Configuration** (MEDIUM) - Precedence rules, XDG spec
-- **Future-proofing** (MEDIUM) - Additive changes, deprecation warnings
-- **Naming & Distribution** (LOW-MEDIUM) - Simple names, ergonomics
+- **Output Formatting** (HIGH) - TTY detection, JSON/plain output, paging
+- **Error Handling** (HIGH) - Human-friendly errors, signal-to-noise
+- **Arguments & Flags** (HIGH) - Prefer flags, standard names, secrets
+- **Interactivity** (HIGH) - TTY checks, --no-input, password handling
+- **Signals & Control** (HIGH) - Ctrl-C handling, crash-only design
+- **Robustness** (MEDIUM-HIGH) - Progress, validation, timeouts, idempotency
+- **Subcommands** (MEDIUM-HIGH) - Consistency, verbs, no catch-alls
+- **Configuration** (MEDIUM) - Precedence, XDG spec
+- **Future-proofing** (MEDIUM) - Additive changes, deprecation
+- **Naming & Distribution** (LOW-MEDIUM) - Simple names, single binary
 
-**Philosophy:**
+### docs-writer
 
-1. Human-first design: Design for humans, optimize for machines second
-2. Simple parts that work together: Composable via stdin/stdout/stderr, exit codes, JSON
-3. Consistency across programs: Follow existing patterns users already know
-4. Saying (just) enough: Not too much output, not too little
-5. Ease of discovery: Help users learn through suggestions, examples, and clear errors
-6. Conversation as the norm: CLI interaction is iterative—guide the user through it
-7. Robustness: Handle failures gracefully, be responsive, feel solid
-8. Empathy: Be on the user's side, help them succeed
-9. Chaos: Know when to break the rules—do so with intention
+Standards for writing, reviewing, and editing documentation. Covers voice and
+tone, language and grammar, formatting, structure, and verification.
 
-**Structure:**
+**Use when:**
 
-- 31 focused rule files in `rules/` directory
-- Each rule: ~50-80 lines with examples and implementation code
-- Comprehensive reference docs in `references/` for deeper context
-- AGENTS.md: Compiled guide with all rules (auto-generated)
+- Writing or editing documentation
+- Working with `.md` or `.mdx` files
+- Reviewing docs for style and consistency
 
-**Rule prefixes by category:**
+**Phases covered:**
 
-- `basics-` - Critical fundamentals (parsing, exit codes, streams, help)
-- `help-` - Help text and documentation patterns
-- `output-` - Output formatting (TTY, JSON, plain, state)
-- `errors-` - Error handling and messaging
-- `args-` - Arguments and flags (prefer flags, standards, secrets)
-- `interactive-` - Prompts and interactivity
-- `signals-` - Signal handling (Ctrl-C, cleanup)
-- `robustness-` - Reliability (validation, progress, idempotency)
-- `subcommands-` - Multi-command consistency
-- `config-` - Configuration management
-- `future-` - Future-proofing and compatibility
-- `naming-` - Command naming and distribution
+- **Documentation standards** - Voice, tone, grammar, formatting, structure
+- **Preparation** - Clarify, investigate, audit, plan
+- **Execution** - Gaps, structure, tone, clarity, consistency
+- **Verification** - Accuracy, self-review, link checks
 
 ## Installation
 
 ```bash
+# Install a specific skill
 npx skills add MildTomato/agent-skills --skill cli-guidelines
+npx skills add MildTomato/agent-skills --skill docs-writer
+
+# Install all skills
+npx skills add MildTomato/agent-skills
 ```
 
 ## Usage
 
-Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
+Skills are automatically available once installed. The agent uses them when
+relevant tasks are detected.
 
 **Examples:**
 
@@ -87,20 +79,20 @@ Create a CLI tool with proper help text and error handling
 ```
 
 ```
-Review this CLI for best practices
-```
-
-```
-Help me implement subcommands with consistent flags
+Review this documentation for style and consistency
 ```
 
 ## Skill Structure
 
 Each skill contains:
 
-- `SKILL.md` - Instructions for the agent
+- `SKILL.md` - Instructions for the agent (required)
+- `metadata.json` - Version and metadata (required)
+- `rules/` - Focused, actionable rule files (optional)
+- `references/` - Background documentation (optional)
 - `scripts/` - Helper scripts for automation (optional)
-- `rules/` or `references/` - Supporting documentation (optional)
+
+See [CLAUDE.md](CLAUDE.md) for detailed contribution guidelines.
 
 ## License
 
